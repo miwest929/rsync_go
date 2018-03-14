@@ -2,7 +2,9 @@ package sync
 
 import (
 	"errors"
+	"fmt"
 	"os"
+	"path/filepath"
 	"rsync_go/chunker"
 )
 
@@ -23,6 +25,90 @@ func NewFileSyncClient(srcDirectory string, destDirectory string) (*FileSyncClie
 	return &FileSyncClient{srcDirectory: srcDirectory, destDirectory: destDirectory}, nil
 }
 
+func (client *FileSyncClient) Sync() {
+	// Get all files in source directory
+	// Get all files in destination directory
+	// If file exists in source and not destination then copy entire file over
+	// If file exists in both then do following:
+	//   Split source version into chunks. Split at block boundary
+	srcFiles := getDirectoryFiles(client.srcDirectory)
+	destFiles := getDirectoryFiles(client.destDirectory)
+
+	defer closeFiles(srcFiles)
+	defer closeFiles(destFiles)
+
+	destFilesSet := make(map[string]*os.File)
+	for _, f := range destFiles {
+		baseName := filepath.Base(f.Name())
+		destFilesSet[baseName] = f
+	}
+
+	for _, srcFile := range srcFiles {
+		baseName := filepath.Base(srcFile.Name())
+		destFile, ok := destFilesSet[baseName]
+		if ok {
+			fmt.Printf("Syncing '%s' with '%s'\n", srcFile.Name(), destFile.Name())
+			client.partialSync(srcFile, destFile)
+		} else {
+			// file doesn't exist in destination directory. Must copy if over.
+			fmt.Printf("INFO: '%s' doesn't exist in source directory.", srcFile.Name())
+		}
+	}
+}
+
+func (client *FileSyncClient) partialSync(srcFd *os.File, destFd *os.File) {
+	// Compute fast-yet-unsafe hash
+	blockChunker := chunker.NewChunker(srcFd, 2000)
+	for _, srcChunk := range blockChunker.Chunks(chunker.BLOCK_BOUNDARY) {
+		srcChunk.ComputeWeakSignature()
+		srcChunk.ComputeStrongSignature()
+	}
+
+	// Compute slow-yet-accurate hash
+	byteChunker := chunker.NewChunker(destFd, 2000)
+	for _, destChunk := range byteChunker.Chunks(chunker.BYTE_BOUNDARY) {
+		destChunk.ComputeWeakSignature()
+	}
+}
+
+func closeFiles(files []*os.File) {
+	for _, file := range files {
+		file.Close()
+	}
+}
+
+func getDirectoryFiles(directory string) []*os.File {
+	filenames := []string{}
+
+	//TODO: Consider using a faster way to crawl a directory than filepath.Walk
+	//TODO: Verify if Walk does a recursive crawl. Make the recursive behavior optional
+	err := filepath.Walk(directory, func(path string, f os.FileInfo, err error) error {
+		// Only non-directory files will be synched
+		if !f.IsDir() {
+			filenames = append(filenames, path)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
+	files := []*os.File{}
+	for _, filename := range filenames {
+		fd, err := os.Open(filename)
+
+		if err != nil {
+			panic(err)
+		}
+
+		files = append(files, fd)
+	}
+
+	return files
+}
+
 func isDirectory(filename string) bool {
 	fi, err := os.Stat(filename)
 	if err != nil {
@@ -30,12 +116,4 @@ func isDirectory(filename string) bool {
 	}
 
 	return fi.Mode().IsDir()
-}
-
-func (client *FileSyncClient) Sync() {
-	// Get all files in source directory
-	// Get all files in destination directory
-	// If file exists in source and not destination then copy entire file over
-	// If file exists in both then do following:
-	//   Split source version into chunks. Split at block boundary
 }

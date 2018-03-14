@@ -6,16 +6,28 @@ import (
 	"testing"
 )
 
-func TestChunker(t *testing.T) {
-	contents := []byte("ThisIsAByteArray")
+const (
+	BLOCK_SIZE = 8
+)
+
+func TestBoundaryChunker(t *testing.T) {
 	fd := openTestFile("../files/test/file.txt")
 
-	numOfBlocks := 2
-	blockSize := len(contents) / numOfBlocks
-	c := chunker.NewChunker(fd, blockSize)
+	c := chunker.NewChunker(fd, BLOCK_SIZE)
 	chunks := c.Chunks(chunker.BLOCK_BOUNDARY)
 
 	if len(chunks) != 3 {
+		t.Fatalf("Expect %d chunks. Got %d.", 3, len(chunks))
+	}
+}
+
+func TestByteChunker(t *testing.T) {
+	fd := openTestFile("../files/test/file.txt")
+
+	c := chunker.NewChunker(fd, BLOCK_SIZE)
+	chunks := c.Chunks(chunker.BYTE_BOUNDARY)
+
+	if len(chunks) != 9 {
 		t.Fatalf("Expect %d chunks. Got %d.", 3, len(chunks))
 	}
 }

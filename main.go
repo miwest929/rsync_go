@@ -5,9 +5,14 @@ import (
 )
 
 func main() {
+	//TODO: Directories should come from command-line variables
 	srcDirectory := "files/main"
 	destDirectory := "files/copy"
 
-	client, _ := sync.NewFileSyncClient(srcDirectory, destDirectory)
+	client, err := sync.NewFileSyncClient(srcDirectory, destDirectory)
+	if err != nil {
+		panic(err)
+	}
+
 	client.Sync()
 }
