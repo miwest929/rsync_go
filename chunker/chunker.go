@@ -1,30 +1,3 @@
-/*
-1. B divides bi into N equally sized blocks b
-0
-j
-and computes signatures Rj and Hj
-on each block. These signatures are sent to A.
-2. For each byte offset i in ai A computes R
-0
-i on the block starting at i.
-3. A compares R
-0
-i
-to each Rj received from B.
-4. For each j where R
-0
-i matches Rj A computes H
-0
-i
-and compares it to Hj
-.
-5. If H
-0
-i matches Hj then A sends a token to B indicating a block match and which
-block matches. Otherwise A sends a literal byte to B.
-6. B receives literal bytes and tokens from A and uses these to construct ai
-.
-*/
 package chunker
 
 import (

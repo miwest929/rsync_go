@@ -50,7 +50,7 @@ func (client *FileSyncClient) Sync() {
 			fmt.Printf("Syncing '%s' with '%s'\n", srcFile.Name(), destFile.Name())
 			client.partialSync(srcFile, destFile)
 		} else {
-			// file doesn't exist in destination directory. Must copy if over.
+			// file doesn't exist in destination directory. Must copy it over.
 			fmt.Printf("INFO: '%s' doesn't exist in source directory.", srcFile.Name())
 		}
 	}

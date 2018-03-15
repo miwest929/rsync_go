@@ -7,3 +7,4 @@ The purpose of this project is for me to learn how file synchronization algorith
 
 ### References
 - https://www.samba.org/~tridge/phd_thesis.pdf
+- https://rsync.samba.org/how-rsync-works.html
