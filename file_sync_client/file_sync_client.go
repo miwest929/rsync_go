@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"rsync_go/chunker"
+	"rsync_go/file_sync"
 )
 
 type FileSyncClient struct {
@@ -48,7 +48,7 @@ func (client *FileSyncClient) Sync() {
 		destFile, ok := destFilesSet[baseName]
 		if ok {
 			fmt.Printf("Syncing '%s' with '%s'\n", srcFile.Name(), destFile.Name())
-			client.partialSync(srcFile, destFile)
+			client.performSync(srcFile, destFile)
 		} else {
 			// file doesn't exist in destination directory. Must copy it over.
 			fmt.Printf("INFO: '%s' doesn't exist in source directory.", srcFile.Name())
@@ -56,19 +56,15 @@ func (client *FileSyncClient) Sync() {
 	}
 }
 
-func (client *FileSyncClient) partialSync(srcFd *os.File, destFd *os.File) {
-	// Compute fast-yet-unsafe hash
-	blockChunker := chunker.NewChunker(srcFd, 2000)
-	for _, srcChunk := range blockChunker.Chunks(chunker.BLOCK_BOUNDARY) {
-		srcChunk.ComputeWeakSignature()
-		srcChunk.ComputeStrongSignature()
-	}
+func (client *FileSyncClient) performSync(srcFd *os.File, destFd *os.File) {
+	fileSync := file_sync.NewFileSync(srcFd, destFd)
+	fileSync.Sync()
+	//srcChunk.ComputeWeakSignature()
+	//srcChunk.ComputeStrongSignature()
 
-	// Compute slow-yet-accurate hash
-	byteChunker := chunker.NewChunker(destFd, 2000)
-	for _, destChunk := range byteChunker.Chunks(chunker.BYTE_BOUNDARY) {
-		destChunk.ComputeWeakSignature()
-	}
+	// The slow hash for the destination file is computing in a rolling fashion
+	// This is called a "rolling hash"
+	//destChunk.ComputeWeakSignature()
 }
 
 func closeFiles(files []*os.File) {

@@ -18,27 +18,31 @@ func computeSumHashDigest(data []byte) int64 {
 }
 
 type Chunk struct {
-	data            []byte
+	Data            []byte
 	WeakSignature   int64
 	StrongSignature [16]byte
 }
 
 func NewChunk(data []byte) *Chunk {
-	return &Chunk{data: data}
+	return &Chunk{Data: data}
 }
 
 func (chunk *Chunk) ComputeWeakSignature() {
-	chunk.WeakSignature = computeSumHashDigest(chunk.data)
+	chunk.WeakSignature = computeSumHashDigest(chunk.Data)
 }
 
 func (chunk *Chunk) ComputeStrongSignature() {
-	chunk.StrongSignature = md5.Sum(chunk.data)
+	chunk.StrongSignature = md5.Sum(chunk.Data)
 }
 
 const (
 	BLOCK_BOUNDARY = iota
 	BYTE_BOUNDARY
 )
+
+type chunking interface {
+	Chunk() []*Chunk
+}
 
 type Chunker struct {
 	fd        *os.File
