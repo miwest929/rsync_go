@@ -26,14 +26,7 @@ type BatchSumHash struct {
 }
 
 func (hash *BatchSumHash) FirstHash() int64 {
-	chunk := hash.chunks[0]
-	var sum int64
-
-	for i := range chunk.Data {
-		sum += int64(chunk.Data[i])
-	}
-
-	return sum
+	return hash.NextHash(0, -1)
 }
 
 func (hash *BatchSumHash) NextHash(currDigest int64, chunkIndex int) int64 {
@@ -86,12 +79,12 @@ type FileSync struct {
 }
 
 func NewFileSync(srcFile *os.File, destFile *os.File) *FileSync {
-	blockChunker := chunker.NewChunker(srcFile, BLOCK_SIZE)
-	byteChunker := chunker.NewChunker(destFile, BLOCK_SIZE)
+	blockChunker := chunker.NewBlockChunker(srcFile, BLOCK_SIZE)
+	byteChunker := chunker.NewByteChunker(destFile, BLOCK_SIZE)
 
 	return &FileSync{
-		blockChunks: blockChunker.Chunks(chunker.BLOCK_BOUNDARY),
-		byteChunks:  byteChunker.Chunks(chunker.BYTE_BOUNDARY),
+		blockChunks: blockChunker.Chunks(),
+		byteChunks:  byteChunker.Chunks(),
 		srcFile:     srcFile,
 		destFile:    destFile,
 	}
